@@ -8,7 +8,7 @@ import {
   StatusBar,
 } from "react-native";
 import IonicIcon from "@expo/vector-icons/Ionicons";
-import { LineChart } from "react-native-chart-kit";
+import { LineChart, PieChart } from "react-native-chart-kit";
 import { useApp } from "../../context/AppContext";
 
 export default function Dashboard() {
@@ -65,6 +65,24 @@ export default function Dashboard() {
         },
       ],
     };
+  }, [weatherLogs]);
+
+  // Prep data for PieChart – weather condition distribution
+  const pieData = useMemo(() => {
+    if (!weatherLogs || weatherLogs.length === 0) return [];
+    const counts = {};
+    weatherLogs.forEach((log) => {
+      const cond = log.condition || "Desconhecido";
+      counts[cond] = (counts[cond] || 0) + 1;
+    });
+    const colors = ["#f59e0b", "#38bdf8", "#f43f5e", "#a78bfa", "#10b981", "#fb923c"];
+    return Object.entries(counts).map(([name, count], idx) => ({
+      name,
+      population: count,
+      color: colors[idx % colors.length],
+      legendFontColor: "#f8fafc",
+      legendFontSize: 13,
+    }));
   }, [weatherLogs]);
 
   const getWeatherIcon = (condition) => {
@@ -166,6 +184,25 @@ export default function Dashboard() {
           <Text style={styles.noData}>Nenhum registro para exibir gráfico.</Text>
         )}
       </View>
+
+      {/* Weather Condition Distribution Pie Chart */}
+      {pieData.length > 0 && (
+        <View style={styles.pieContainer}>
+          <Text style={styles.chartTitle}>Distribuição por Condição Climática</Text>
+          <PieChart
+            data={pieData}
+            width={Dimensions.get("window").width - 48}
+            height={220}
+            chartConfig={{
+              color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+            }}
+            accessor="population"
+            backgroundColor="transparent"
+            paddingLeft="15"
+            absolute
+          />
+        </View>
+      )}
     </ScrollView>
   );
 }
@@ -293,6 +330,14 @@ const styles = StyleSheet.create({
   chartStyle: {
     marginVertical: 8,
     borderRadius: 16,
+  },
+  pieContainer: {
+    backgroundColor: "rgba(30, 41, 59, 0.5)",
+    padding: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.1)",
+    marginTop: 20,
   },
   noData: {
     color: "#64748b",
